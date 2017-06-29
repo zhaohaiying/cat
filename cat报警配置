@@ -50,3 +50,43 @@ Type:填写Transaction页面内的类型（例如activeMq）
 Name：填写类型下具体的name（例如activeMq类型下的mq1）（如果想监控activeMq类型下所有name，可以填空串或All）
 其他根据提示填写即可
 6、默认告警策略是5分钟执行一次（5分钟延迟）
+8、告警如果支持邮件方式，邮件内容如下：
+[CAT Transaction告警: orderapihttp activeMq All] : [实际值:689 ] [最大阈值: 1 ][告警时间:2017-06-29 14:45:01]
+[时间: 2017-06-29 14:45] 点击此处查看详情
+修改告警联系人信息请点击
+[告警间隔时间]5分钟
+其中【点击此处查看详情】和【修改告警联系人信息】链接的地址默认是点评的内部网址，我们无法链接进去
+修改方法：上面的邮件内容是根据模板配置的，模板的位置：tomcat/webapps/cat/WEB-INF/classes/freemaker/**Alert.ftl
+**Alert.ftl文件中配置了：
+[CAT Transaction告警: ${domain} ${type} ${name}] : ${content}[时间: ${date}] 
+<a href='http://cat.dianpingoa.com/cat/r/t?domain=${domain}&type=${type}&name=${name}&date=${linkDate}'>点击此处查看详情</a><br/>
+<a href="http://crab.dp/cmdb/app_manage">修改告警联系人信息请点击</a>
+将其中的两个http地址改为自己的地址即可，例如：
+[CAT Transaction告警: ${domain} ${type} ${name}] : ${content}[时间: ${date}] 
+<a href='http://**:8802/cat/r/t?domain=${domain}&type=${type}&name=${name}&date=${linkDate}'>点击此处查看详情</a><br/>
+<a href="http://**:8192/cat/s/config?op=alertDefaultReceivers">修改告警联系人信息请点击</a>
+9、从github上下载下来的代码，本地无法执行调试（项目引用了很多根据配置文件动态生成的代码，导致clean install可以成功，但是调试运行单元测试时会提示找不到类）
+解决方法：先执行clean install打包整个解决方案，然后将每个项目的target目录下的generated-sources目录下的java代码复制到当前项目中即可
+10、调试方法：
+打开E:\cat-master1.4\cat-master\cat-home\src\test\java\com\dianping\cat\report\alert\AlertTest.java
+鼠标右键：debug as:junit test
+(注意在此之前，需要先在代码所在的盘符例如：E:\data\appdatas\cat\client.xml,datasources.xml，server.xml)改为本地配置
+server.xml(alert-machine必须为true，否则无法触发报警):
+<?xml version="1.0" encoding="utf-8"?>
+<config local-mode="false" hdfs-machine="false" job-machine="false" alert-machine="true">
+	<storage  local-base-dir="/data/appdatas/cat/bucket/" max-hdfs-storage-time="15" local-report-storage-time="7" local-logivew-storage-time="7">
+	</storage>
+	<console default-domain="Cat" show-cat-domain="true">
+		<remote-servers>127.0.0.1:2281</remote-servers>	
+	</console>
+	<ldap ldapUrl="ldap://192.168.50.11:389/DC=dianpingoa,DC=com"/>
+</config>
+client.xml:
+<?xml version="1.0" encoding="utf-8"?>
+<config mode="client" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:noNamespaceSchemaLocation="config.xsd">
+	<servers>
+		<server ip="127.0.0.1" port="2280" http-port="2281" />
+	</servers>
+</config>
+然后cat-home目录：cd cat-home，运行mvn jetty:run（启动cat服务端）
+打开客户端路由添加（允许本机调用cat服务端）<default-server id="127.0.0.1" weight="1.0" port="2280" enable="true"/>
