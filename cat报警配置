@@ -1,0 +1,52 @@
+
+1、打开cat配置页：http://*****:8192/cat/s/config?op=alertSenderConfigUpdate
+2、修改配置如下即配置报警提供者（http://**/catalert/sendalert是自己写的一个post接口，cat只支持form表单提交）：
+<?xml version="1.0" encoding="utf-8"?>
+<sender-config>
+   <sender id="mail" url="http://**/catalert/sendalert" type="post" successCode="200" batchSend="true">
+      <par id="to=${receiver}"/>
+      <par id="title=${title}"/>
+      <par id="content=${content}"/>
+      <par id="type=mail"/>
+   </sender>
+   <sender id="weixin" url="http://**/catalert/sendalert" type="post" successCode="success" batchSend="true">
+      <par id="domain=${domain}"/>
+      <par id="email=${receiver}"/>
+      <par id="title=${title}"/>
+      <par id="content=${content}"/>
+      <par id="type=${type}"/>
+   </sender>
+   <sender id="sms" url="http://**/catalert/sendalert" type="post" successCode="200" batchSend="false">
+      <par id="to=${receiver}"/>
+      <par id="title=catalert"/>
+      <par id="content=${content}"/>
+      <par id="type=sms"/>
+   </sender>
+</sender-config>
+3、修改默认告警人：
+http://**:8192/cat/s/config?op=alertDefaultReceivers：
+修改邮件和手机号为自己的邮箱和手机号(最好将所有节点的邮件和手机都修改)
+然后新增（应用监控配置里面的Transaction告警会用到这个节点的配置）：
+<receiver id="Transaction" enable="true">
+      <email>8888@qq.com</email>
+      <phone>12345678900</phone>
+</receiver>
+4、修改告警策略：
+http://***:8192/cat/s/config?op=alertPolicy
+修改报警策略(最好将所有节点都修改，都支持邮件和手机短信)
+然后新增（应用监控配置里面的Transaction告警会用到这个节点的配置）：
+ <type id="Transaction">
+      <group id="default">
+         <level id="error" send="mail,sms" suspendMinute="5"/>
+         <level id="warning" send="mail,sms" suspendMinute="5"/>
+      </group>
+</type>
+5、配置应用监控配置里面的Transaction告警
+例如：Transaction页面内的类型为activeMq,这个类型下面有两个name:mq1,mq2
+如果需要配置activeMq类型的Transaction的告警
+在应用监控配置里面的Transaction告警，新增：
+项目：填写domain（要监控的项目名称）
+Type:填写Transaction页面内的类型（例如activeMq）
+Name：填写类型下具体的name（例如activeMq类型下的mq1）（如果想监控activeMq类型下所有name，可以填空串或All）
+其他根据提示填写即可
+6、默认告警策略是5分钟执行一次（5分钟延迟）
